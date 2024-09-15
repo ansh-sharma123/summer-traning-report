@@ -1,7 +1,8 @@
 # summer-traning-report
 snake game
-package com.zetcode;
 
+
+package com.zetcode;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
