@@ -1,248 +1,219 @@
-# summer-traning-report
-snake game
+Flappy bird Game 
 
 
-package com.zetcode;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
-import javax.swing.Timer;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Random;
+import javax.swing.*;
 
-public class Board extends JPanel implements ActionListener {
+public class FlappyBird extends JPanel implements ActionListener, KeyListener{
+    int boardWidth = 360;
+    int boardHeight = 640;
 
-    private final int B_WIDTH = 300;
-    private final int B_HEIGHT = 300;
-    private final int DOT_SIZE = 10;
-    private final int ALL_DOTS = 900;
-    private final int RAND_POS = 29;
-    private final int DELAY = 140;
+    // Images
+    Image backgroundImg;
+    Image birdImg;
+    Image topPipeImg;
+    Image bottomPipeImg;
 
-    private final int x[] = new int[ALL_DOTS];
-    private final int y[] = new int[ALL_DOTS];
-
-    private int dots;
-    private int apple_x;
-    private int apple_y;
-
-    private boolean leftDirection = false;
-    private boolean rightDirection = true;
-    private boolean upDirection = false;
-    private boolean downDirection = false;
-    private boolean inGame = true;
-
-    private Timer timer;
-    private Image ball;
-    private Image apple;
-    private Image head;
-
-    public Board() {
-        
-        initBoard();
-    }
-    
-    private void initBoard() {
-
-        addKeyListener(new TAdapter());
-        setBackground(Color.black);
-        setFocusable(true);
-
-        setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
-        loadImages();
-        initGame();
-    }
-
-    private void loadImages() {
-
-        ImageIcon iid = new ImageIcon("src/resources/dot.png");
-        ball = iid.getImage();
-
-        ImageIcon iia = new ImageIcon("src/resources/apple.png");
-        apple = iia.getImage();
-
-        ImageIcon iih = new ImageIcon("src/resources/head.png");
-        head = iih.getImage();
-    }
-
-    private void initGame() {
-
-        dots = 3;
-
-        for (int z = 0; z < dots; z++) {
-            x[z] = 50 - z * 10;
-            y[z] = 50;
-        }
-        
-        locateApple();
-
-        timer = new Timer(DELAY, this);
-        timer.start();
-    }
-
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        doDrawing(g);
-    }
-    
-    private void doDrawing(Graphics g) {
-        
-        if (inGame) {
-
-            g.drawImage(apple, apple_x, apple_y, this);
-
-            for (int z = 0; z < dots; z++) {
-                if (z == 0) {
-                    g.drawImage(head, x[z], y[z], this);
-                } else {
-                    g.drawImage(ball, x[z], y[z], this);
-                }
-            }
-
-            Toolkit.getDefaultToolkit().sync();
-
-        } else {
-
-            gameOver(g);
-        }        
-    }
-
-    private void gameOver(Graphics g) {
-        
-        String msg = "Game Over";
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.white);
-        g.setFont(small);
-        g.drawString(msg, (B_WIDTH - metr.stringWidth(msg)) / 2, B_HEIGHT / 2);
-    }
-
-    private void checkApple() {
-
-        if ((x[0] == apple_x) && (y[0] == apple_y)) {
-
-            dots++;
-            locateApple();
-        }
-    }
-
-    private void move() {
-
-        for (int z = dots; z > 0; z--) {
-            x[z] = x[(z - 1)];
-            y[z] = y[(z - 1)];
-        }
-
-        if (leftDirection) {
-            x[0] -= DOT_SIZE;
-        }
-
-        if (rightDirection) {
-            x[0] += DOT_SIZE;
-        }
-
-        if (upDirection) {
-            y[0] -= DOT_SIZE;
-        }
-
-        if (downDirection) {
-            y[0] += DOT_SIZE;
-        }
-    }
-
-    private void checkCollision() {
-
-        for (int z = dots; z > 0; z--) {
-
-            if ((z > 4) && (x[0] == x[z]) && (y[0] == y[z])) {
-                inGame = false;
-            }
-        }
-
-        if (y[0] >= B_HEIGHT) {
-            inGame = false;
-        }
-
-        if (y[0] < 0) {
-            inGame = false;
-        }
-
-        if (x[0] >= B_WIDTH) {
-            inGame = false;
-        }
-
-        if (x[0] < 0) {
-            inGame = false;
-        }
-        
-        if (!inGame) {
-            timer.stop();
-        }
-    }
-
-    private void locateApple() {
-
-        int r = (int) (Math.random() * RAND_POS);
-        apple_x = ((r * DOT_SIZE));
-
-        r = (int) (Math.random() * RAND_POS);
-        apple_y = ((r * DOT_SIZE));
-    }
+    //Bird
+    int birdX = boardWidth/8;
+    int birdY = boardHeight/2;
+    int birdWidth = 34;
+    int birdHeight = 24;
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
-        if (inGame) {
-
-            checkApple();
-            checkCollision();
-            move();
+        move();
+        repaint();
+        if(gameOver){
+            placePipesTimer.stop();
+            gameloop.stop();
         }
 
-        repaint();
     }
 
-    private class TAdapter extends KeyAdapter {
 
-        @Override
-        public void keyPressed(KeyEvent e) {
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_SPACE){
+            velocityY = -9;
+        }
+        if(gameOver){
+            // restart the game by resetting the conditions
+            bird.y = birdY;
+            velocityY = 0;
+            pipes.clear();
+            score = 0;
+            gameOver = false;
+            gameloop.start();
+            placePipesTimer.start();
+        }
+    }
 
-            int key = e.getKeyCode();
+    @Override
+    public void keyTyped(KeyEvent e) {
 
-            if ((key == KeyEvent.VK_LEFT) && (!rightDirection)) {
-                leftDirection = true;
-                upDirection = false;
-                downDirection = false;
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
+    }
+
+    class Bird{
+        int x = birdX;
+        int y = birdY;
+        int width = birdWidth;
+        int height = birdHeight;
+        Image img;
+
+        Bird(Image img){
+            this.img = img;
+        }
+    }
+
+    // Pipes
+    int pipeX = boardWidth;
+    int pipeY = 0;
+    int pipeWidth = 64; // scaled by 1/6
+    int pipeHeight = 512;
+
+    class Pipe{
+        int x = pipeX;
+        int y = pipeY;
+        int width = pipeWidth;
+        int height = pipeHeight;
+        Image img;
+        boolean passed = false;
+
+        Pipe(Image img){
+            this.img = img;
+        }
+    }
+
+    // game logic
+    Bird bird;
+    int velocityY = 0; // move bird up/down speed
+    int velocityX = -4;  // move pipes to the left speed (simulates bird moving right)
+    int gravity = 1;
+
+    ArrayList<Pipe> pipes;
+    Random random = new Random();
+
+    Timer gameloop;
+    Timer placePipesTimer;
+    boolean gameOver = false;
+    double score = 0;
+
+
+    FlappyBird(){
+        setPreferredSize(new Dimension(boardWidth, boardHeight));
+//        setBackground(Color.blue);
+        setFocusable(true);     // Important
+        addKeyListener(this);  // Important
+
+        // load images
+        backgroundImg = new ImageIcon(getClass().getResource("./flappybirdbg.png")).getImage();
+        birdImg =new ImageIcon(getClass().getResource("./flappybird.png")).getImage();
+        topPipeImg = new ImageIcon(getClass().getResource("./toppipe.png")).getImage();
+        bottomPipeImg = new ImageIcon(getClass().getResource("./bottompipe.png")).getImage();
+
+        // bird
+        bird = new Bird(birdImg);
+        pipes = new ArrayList<Pipe>();
+
+        // place pipes timer
+        placePipesTimer = new Timer(1500, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                placePipes();
+            }
+        });
+        placePipesTimer.start();
+
+        // game timer
+        gameloop = new Timer(1000/60, this); // 1000/60 = 16.6
+        gameloop.start();
+    }
+
+    public void placePipes(){
+        // (0-1) * pipeHeight/2 -> (0-256)
+        // 128
+        // 0 - 128 - (0-256) --> pipeHeight/4 -> 3/4 pipeHeight
+        int randomPipeY = (int) (pipeY - pipeHeight/4 - Math.random()*(pipeHeight/2));
+        int openingSpace = boardHeight/4;
+
+        Pipe topPipe = new Pipe(topPipeImg);
+        topPipe.y = randomPipeY;
+        pipes.add(topPipe);
+
+        Pipe bottomPipe = new Pipe(bottomPipeImg);
+        bottomPipe.y = topPipe.y + pipeHeight + openingSpace;
+        pipes.add(bottomPipe);
+    }
+
+    public void paintComponent(Graphics g){
+        super.paintComponent(g);
+        draw(g);
+    }
+
+    public void draw(Graphics g){
+        // background
+        g.drawImage(backgroundImg, 0, 0, boardWidth, boardHeight, null);
+
+        // bird
+        g.drawImage(bird.img, bird.x, bird.y, bird.width, bird.height, null);
+
+        // pipes
+        for (int i=0; i<pipes.size();i++){
+            Pipe pipe = pipes.get(i);
+            g.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height, null);
+
+        }
+
+        // score
+        g.setColor(Color.white);
+        g.setFont(new Font("Arial", Font.PLAIN, 32));
+        if(gameOver){
+            g.drawString("Game Over: " + String.valueOf((int) score), 10, 35);
+        }else{
+            g.drawString(String.valueOf((int) score),10, 35);
+        }
+
+    }
+
+    public void move(){
+        // bird
+        velocityY += gravity;
+        bird.y += velocityY;
+        bird.y = Math.max(bird.y, 0);
+
+        // pipes
+        for (int i = 0; i < pipes.size(); i++){
+            Pipe pipe = pipes.get(i);
+            pipe.x += velocityX;
+
+            if(!pipe.passed && bird.x > pipe.x + pipe.width){
+                pipe.passed = true;
+                score += 0.5; // 0.5 becuse there are 2 pipes! so 0.5 = 1, 1 for each set of pipes
             }
 
-            if ((key == KeyEvent.VK_RIGHT) && (!leftDirection)) {
-                rightDirection = true;
-                upDirection = false;
-                downDirection = false;
-            }
-
-            if ((key == KeyEvent.VK_UP) && (!downDirection)) {
-                upDirection = true;
-                rightDirection = false;
-                leftDirection = false;
-            }
-
-            if ((key == KeyEvent.VK_DOWN) && (!upDirection)) {
-                downDirection = true;
-                rightDirection = false;
-                leftDirection = false;
+            if(collision(bird, pipe)){
+                gameOver = true;
             }
         }
+
+        if(bird.y > boardHeight){
+            gameOver = true;
+        }
+    }
+
+    public boolean collision (Bird a, Pipe b){
+        return a.x < b.x + b.width && // a's top left corner doesn't reach b's top right corner
+                a.x + a.width > b.x && // a's top right corner passes b's top left corner
+                a.y < b.y + b.height && // a's top left corner doesn't reach b's bottom left corner
+                a.y + a.height > b.y; // a's bottom left corner passes b's top left corner
     }
 }
